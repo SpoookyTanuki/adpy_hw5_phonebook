@@ -1,5 +1,6 @@
 import re
 import pandas as pd
+import numpy as np
 
 import csv
 with open("phonebook_raw.csv") as f:
@@ -18,9 +19,19 @@ for i in contacts_list[1:]:
     fio_jobs = compiled.findall(str(i))
     lastname = fio_jobs[0][0]
     firstname = fio_jobs[0][1]
-    patronym = fio_jobs[0][2]
-    company = fio_jobs[0][3]
-    position = fio_jobs[0][4]
+    if fio_jobs[0][2] == "":
+        patronym = np.nan
+    else:
+        patronym = fio_jobs[0][2]
+    if fio_jobs[0][3] == "":
+        company = np.nan
+    else:
+        company = fio_jobs[0][3]
+    if fio_jobs[0][4] == "":
+        position = np.nan
+    else:
+        position = fio_jobs[0][4]
+
     # print(f'{lastname} {firstname} {patronym}\n{company}\n{position}')
 
     phone_compiled = re.compile(pattern_phone)
@@ -31,26 +42,24 @@ for i in contacts_list[1:]:
             phone = re.sub(pattern_phone, r"+7(\4)\6-\8-\10 доб.\13", all_phones)
         else:
             phone = re.sub(pattern_phone, r"+7(\4)\6-\8-\10", all_phones)
+    else:
+        phone = np.nan
 
     find_email = re.search(pattern_email, str(i))
     if find_email is not None:
         email = find_email.group(0)
+    else:
+        email = np.nan
 
     person = [lastname, firstname, patronym, company, position, phone, email]
     people.append(person)
 
+
 cols = ['lastname', 'firstname', 'patronym', 'company', 'position', 'phone', 'email']
 
 frame = pd.DataFrame(people, columns=cols)
+
 frame = frame.groupby('lastname').agg({'firstname': 'first', 'patronym': 'first', 'company': 'first',
                                        'position': 'first', 'phone': 'first', 'email': 'first'}).reset_index()
-frame.to_csv('phonebook.csv', index=False)
 
-''' не понимаю, почему в некоторых случаях дублируются телефоны и емейлы у разных людей
-то есть:
-- Мартиняхин без должности
-- Лагунцов не с тем емейлом
-- Наркаев с емейлом, которого у него не было
-при этом у других всё нормально
-это в groupby проблема? что-то другое нужно вписать в .agg? что? 
-подскажите, пожалуйста - очень много гуглила и не нагуглила'''
+frame.to_csv('phonebook.csv', index=False)
